@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using label_api.Exceptions;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -21,7 +22,7 @@ public class ReleaseController : ControllerBase
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
-            return Unauthorized();
+            throw LabelApiException.Unauthorized("User must be authenticated to upload releases");
 
         var dto = new ReleaseUploadDto
         {
@@ -40,7 +41,8 @@ public class ReleaseController : ControllerBase
             userId, dto, form.CoverArt, form.AudioFile);
 
         if (!success)
-            return BadRequest(new { error });
+            throw LabelApiException.BadRequest(error ?? "Failed to upload release");
+        
         return Ok(release);
     }
 } 
