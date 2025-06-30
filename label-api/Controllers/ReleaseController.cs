@@ -22,9 +22,6 @@ public class ReleaseController : ControllerBase
     public async Task<IActionResult> UploadRelease([FromForm] ReleaseUploadForm form)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
-            throw LabelApiException.Unauthorized("User must be authenticated to upload releases");
-
         var dto = new ReleaseUploadDto
         {
             ReleaseName = form.ReleaseName,
@@ -51,10 +48,7 @@ public class ReleaseController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetReleases()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
-            throw LabelApiException.Unauthorized("User must be authenticated to view releases");
-
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);   
         var releases = await _releaseService.GetUserReleasesAsync(userId);
         return Ok(releases);
     }
@@ -64,10 +58,40 @@ public class ReleaseController : ControllerBase
     public async Task<IActionResult> SearchReleases([FromQuery] ReleaseSearchDto searchDto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
-            throw LabelApiException.Unauthorized("User must be authenticated to search releases");
-
         var releases = await _releaseService.SearchUserReleasesAsync(userId, searchDto);
         return Ok(releases);
+    }
+
+    [Authorize]
+    [HttpPut("{releaseId}")]
+    public async Task<IActionResult> UpdateLabel(int releaseId, [FromForm] UpdateReleaseDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);      
+        var updated = await _releaseService.UpdateReleaseAsync(userId, releaseId, dto);
+        return Ok("Label Succesfully Updated");
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/search")]
+    public async Task<IActionResult> AdminSearchReleases([FromQuery] ReleaseSearchDto searchDto)
+    {
+        var releases = await _releaseService.AdminSearchReleasesAsync(searchDto);
+        return Ok(releases);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin")]
+    public async Task<IActionResult> GetAllReleases([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        var result = await _releaseService.GetAllReleasesPagedAsync(page, pageSize);
+        return Ok(result);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("admin/status")]
+    public async Task<IActionResult> UpdateReleaseStatus([FromBody] StatusUpdateDto dto)
+    {
+        await _releaseService.UpdateReleaseStatusAsync(dto);
+        return Ok("Status updated");
     }
 } 

@@ -17,6 +17,8 @@ public class Release
     public string Genre { get; set; }
     public string Subgenre { get; set; }
     public string TypeOfRelease { get; set; }
+    public int LabelStatus { get; set; }
+    public string RejectMessage { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 } 

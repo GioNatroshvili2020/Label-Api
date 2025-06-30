@@ -7,6 +7,8 @@ using label_api.Data;
 using label_api.DTOs;
 using label_api.Models;
 using label_api.Options;
+using label_api.Exceptions;
+using System.Threading.Tasks;
 
 public class ReleaseService : IReleaseService
 {
@@ -209,6 +211,169 @@ public class ReleaseService : IReleaseService
         }
 
         return releases;
+    }
+
+    public async Task<bool> UpdateReleaseAsync(string userId, int releaseId, UpdateReleaseDto dto)
+    {
+        var release = await _dbContext.Releases.FindAsync(releaseId);
+        if (release == null || release.UserId != userId)
+            throw LabelApiException.BadRequest("Label does not exist, or you do not have permission to update it.");
+        if (release.LabelStatus == (int)ReleaseStatus.Approved || release.LabelStatus == (int)ReleaseStatus.Rejected)
+            throw LabelApiException.BadRequest("Cannot Update Approved or Rejected Labels");
+
+        // Handle CoverArt
+        if (dto.CoverArt != null && dto.CoverArt.Length > 0)
+        {
+            var coverArtExt = Path.GetExtension(dto.CoverArt.FileName).ToLowerInvariant();
+            if (Array.IndexOf(_options.AllowedImageExtensions, coverArtExt) < 0)
+                throw LabelApiException.BadRequest("Invalid cover art file type.");
+            var (coverValid, coverError) = _validator.ValidateCoverArt(dto.CoverArt, _options.AllowedImageExtensions, _options.MaxCoverArtSize);
+            if (!coverValid)
+                throw LabelApiException.BadRequest(coverError);
+            var coverArtFileName = $"{Guid.NewGuid()}{coverArtExt}";
+            var coverArtPath = Path.Combine(_coverArtDir, coverArtFileName);
+            using (var stream = new FileStream(coverArtPath, FileMode.Create))
+            {
+                await dto.CoverArt.CopyToAsync(stream);
+            }
+            release.CoverArtPath = coverArtPath;
+        }
+        // Handle AudioFile
+        if (dto.AudioFile != null && dto.AudioFile.Length > 0)
+        {
+            var audioExt = Path.GetExtension(dto.AudioFile.FileName).ToLowerInvariant();
+            if (Array.IndexOf(_options.AllowedAudioExtensions, audioExt) < 0)
+                throw LabelApiException.BadRequest("Invalid audio file type.");
+            var (audioValid, audioError) = _validator.ValidateAudioFile(dto.AudioFile, _options.AllowedAudioExtensions, _options.MaxAudioSize);
+            if (!audioValid)
+                throw LabelApiException.BadRequest(audioError);
+            var audioFileName = $"{Guid.NewGuid()}{audioExt}";
+            var audioPath = Path.Combine(_audioDir, audioFileName);
+            using (var stream = new FileStream(audioPath, FileMode.Create))
+            {
+                await dto.AudioFile.CopyToAsync(stream);
+            }
+            release.AudioFilePath = audioPath;
+        }
+        // Update other fields
+        release.ReleaseName = dto.ReleaseName;
+        release.ReleaseVersion = dto.ReleaseVersion;
+        release.FeaturingArtist = dto.FeaturingArtist;
+        release.PrimaryArtist = dto.PrimaryArtist;
+        release.Roles = dto.Roles;
+        release.Contributors = dto.Contributors;
+        release.Genre = dto.Genre;
+        release.Subgenre = dto.Subgenre;
+        release.TypeOfRelease = dto.TypeOfRelease;
+        release.UpdatedAt = System.DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<IEnumerable<ReleaseDto>> AdminSearchReleasesAsync(ReleaseSearchDto searchDto)
+    {
+        var query = _dbContext.Releases.AsQueryable();
+
+        // Apply search filters (same as SearchUserReleasesAsync)
+        if (!string.IsNullOrEmpty(searchDto.ReleaseName))
+            query = query.Where(r => r.ReleaseName.Contains(searchDto.ReleaseName));
+        if (!string.IsNullOrEmpty(searchDto.PrimaryArtist))
+            query = query.Where(r => r.PrimaryArtist.Contains(searchDto.PrimaryArtist));
+        if (!string.IsNullOrEmpty(searchDto.FeaturingArtist))
+            query = query.Where(r => r.FeaturingArtist != null && r.FeaturingArtist.Contains(searchDto.FeaturingArtist));
+        if (!string.IsNullOrEmpty(searchDto.Genre))
+            query = query.Where(r => r.Genre != null && r.Genre.Contains(searchDto.Genre));
+        if (!string.IsNullOrEmpty(searchDto.Subgenre))
+            query = query.Where(r => r.Subgenre != null && r.Subgenre.Contains(searchDto.Subgenre));
+        if (!string.IsNullOrEmpty(searchDto.TypeOfRelease))
+            query = query.Where(r => r.TypeOfRelease != null && r.TypeOfRelease.Contains(searchDto.TypeOfRelease));
+        if (!string.IsNullOrEmpty(searchDto.Contributors))
+            query = query.Where(r => r.Contributors != null && r.Contributors.Contains(searchDto.Contributors));
+        if (searchDto.CreatedAfter.HasValue)
+            query = query.Where(r => r.CreatedAt >= searchDto.CreatedAfter.Value);
+        if (searchDto.CreatedBefore.HasValue)
+            query = query.Where(r => r.CreatedAt <= searchDto.CreatedBefore.Value);
+
+        var releases = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new ReleaseDto
+            {
+                Id = r.Id,
+                ReleaseName = r.ReleaseName,
+                ReleaseVersion = r.ReleaseVersion,
+                FeaturingArtist = r.FeaturingArtist,
+                PrimaryArtist = r.PrimaryArtist,
+                Roles = r.Roles,
+                Contributors = r.Contributors,
+                Genre = r.Genre,
+                Subgenre = r.Subgenre,
+                TypeOfRelease = r.TypeOfRelease,
+                CoverArtPath = r.CoverArtPath,
+                AudioFilePath = r.AudioFilePath
+            })
+            .ToListAsync();
+
+        // Convert file paths to URLs
+        foreach (var release in releases)
+        {
+            release.CoverArtPath = GetMediaUrl(release.CoverArtPath);
+            release.AudioFilePath = GetMediaUrl(release.AudioFilePath);
+        }
+
+        return releases;
+    }
+
+    public async Task<PagedResult<ReleaseDto>> GetAllReleasesPagedAsync(int page, int pageSize)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 20;
+        var query = _dbContext.Releases.AsQueryable();
+        var totalCount = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        var releases = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(r => new ReleaseDto
+            {
+                Id = r.Id,
+                ReleaseName = r.ReleaseName,
+                ReleaseVersion = r.ReleaseVersion,
+                FeaturingArtist = r.FeaturingArtist,
+                PrimaryArtist = r.PrimaryArtist,
+                Roles = r.Roles,
+                Contributors = r.Contributors,
+                Genre = r.Genre,
+                Subgenre = r.Subgenre,
+                TypeOfRelease = r.TypeOfRelease,
+                CoverArtPath = r.CoverArtPath,
+                AudioFilePath = r.AudioFilePath
+            })
+            .ToListAsync();
+        foreach (var release in releases)
+        {
+            release.CoverArtPath = GetMediaUrl(release.CoverArtPath);
+            release.AudioFilePath = GetMediaUrl(release.AudioFilePath);
+        }
+        return new PagedResult<ReleaseDto>
+        {
+            Items = releases,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        };
+    }
+
+    public async Task UpdateReleaseStatusAsync(StatusUpdateDto dto)
+    {
+        var release = await _dbContext.Releases.FindAsync(dto.ReleaseId);
+        if (release == null)
+            throw LabelApiException.BadRequest("Release not found");
+        release.LabelStatus = (int)dto.Status;
+        if (!string.IsNullOrEmpty(dto.RejectReason))
+            release.RejectMessage = dto.RejectReason;
+        await _dbContext.SaveChangesAsync();
     }
 
     private string GetMediaUrl(string filePath)
