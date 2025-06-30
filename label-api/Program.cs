@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using label_api.Data;
+using label_api.Models;
+using label_api.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +18,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     .AddDefaultTokenProviders();
 
 builder.Services.AddCustomServices(builder.Configuration);
+builder.Services.AddGlobalErrorHandling();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -37,9 +41,22 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.Configure<AdminUserOptions>(builder.Configuration.GetSection("AdminUser"));
 
+// Configure media base URL from environment
+builder.Services.PostConfigure<ReleaseUploadOptions>(options =>
+{
+    var mediaBaseUrl = builder.Configuration.GetValue<string>("MediaBaseUrl");
+    if (!string.IsNullOrEmpty(mediaBaseUrl))
+    {
+        options.MediaBaseUrl = mediaBaseUrl;
+    }
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+// Add global exception handling first
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

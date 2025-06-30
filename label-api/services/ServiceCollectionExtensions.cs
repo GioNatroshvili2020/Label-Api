@@ -1,6 +1,8 @@
 using MimeDetective;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using label_api.Handlers;
+using label_api.Options;
 
 public static class ServiceCollectionExtensions
 {
@@ -16,6 +18,15 @@ public static class ServiceCollectionExtensions
             }.Build()
         );
         services.Configure<ReleaseUploadOptions>(configuration.GetSection("ReleaseUpload"));
+        return services;
+    }
+
+    public static IServiceCollection AddGlobalErrorHandling(this IServiceCollection services)
+    {
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+        // Add problem details support for consistent error responses
+        services.AddProblemDetails();
+        
         return services;
     }
 }

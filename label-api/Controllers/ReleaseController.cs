@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using label_api.Exceptions;
+using label_api.DTOs;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/releases")]
 public class ReleaseController : ControllerBase
 {
     private readonly IReleaseService _releaseService;
@@ -21,7 +23,7 @@ public class ReleaseController : ControllerBase
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
-            return Unauthorized();
+            throw LabelApiException.Unauthorized("User must be authenticated to upload releases");
 
         var dto = new ReleaseUploadDto
         {
@@ -40,7 +42,32 @@ public class ReleaseController : ControllerBase
             userId, dto, form.CoverArt, form.AudioFile);
 
         if (!success)
-            return BadRequest(new { error });
+            throw LabelApiException.BadRequest(error ?? "Failed to upload release");
+        
         return Ok(release);
+    }
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> GetReleases()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            throw LabelApiException.Unauthorized("User must be authenticated to view releases");
+
+        var releases = await _releaseService.GetUserReleasesAsync(userId);
+        return Ok(releases);
+    }
+
+    [Authorize]
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchReleases([FromQuery] ReleaseSearchDto searchDto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            throw LabelApiException.Unauthorized("User must be authenticated to search releases");
+
+        var releases = await _releaseService.SearchUserReleasesAsync(userId, searchDto);
+        return Ok(releases);
     }
 } 

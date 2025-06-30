@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
+using label_api.DTOs;
 
 public interface IReleaseService
 {
     Task<(bool Success, string ErrorMessage, ReleaseDto Release)> UploadReleaseAsync(string userId, ReleaseUploadDto dto, IFormFile coverArt, IFormFile audioFile);
+    Task<IEnumerable<ReleaseDto>> GetUserReleasesAsync(string userId);
+    Task<IEnumerable<ReleaseDto>> SearchUserReleasesAsync(string userId, ReleaseSearchDto searchDto);
 } 

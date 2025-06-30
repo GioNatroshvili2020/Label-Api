@@ -2,6 +2,11 @@ using MimeDetective;
 using NAudio.Wave;
 using SixLabors.ImageSharp;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
+using label_api.Data;
+using label_api.DTOs;
+using label_api.Models;
+using label_api.Options;
 
 public class ReleaseService : IReleaseService
 {
@@ -97,8 +102,8 @@ public class ReleaseService : IReleaseService
                 Genre = release.Genre,
                 Subgenre = release.Subgenre,
                 TypeOfRelease = release.TypeOfRelease,
-                CoverArtPath = coverArtPath,
-                AudioFilePath = audioPath
+                CoverArtPath = GetMediaUrl(coverArtPath),
+                AudioFilePath = GetMediaUrl(audioPath)
             };
             return (true, null, result);
         }
@@ -111,5 +116,108 @@ public class ReleaseService : IReleaseService
                 File.Delete(audioPath);
             return (false, $"Failed to save release: {ex.Message}", null);
         }
+    }
+
+    public async Task<IEnumerable<ReleaseDto>> GetUserReleasesAsync(string userId)
+    {
+        var releases = await _dbContext.Releases
+            .Where(r => r.UserId == userId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new ReleaseDto
+            {
+                Id = r.Id,
+                ReleaseName = r.ReleaseName,
+                ReleaseVersion = r.ReleaseVersion,
+                FeaturingArtist = r.FeaturingArtist,
+                PrimaryArtist = r.PrimaryArtist,
+                Roles = r.Roles,
+                Contributors = r.Contributors,
+                Genre = r.Genre,
+                Subgenre = r.Subgenre,
+                TypeOfRelease = r.TypeOfRelease,
+                CoverArtPath = r.CoverArtPath,
+                AudioFilePath = r.AudioFilePath
+            })
+            .ToListAsync();
+
+        // Convert file paths to URLs
+        foreach (var release in releases)
+        {
+            release.CoverArtPath = GetMediaUrl(release.CoverArtPath);
+            release.AudioFilePath = GetMediaUrl(release.AudioFilePath);
+        }
+
+        return releases;
+    }
+
+    public async Task<IEnumerable<ReleaseDto>> SearchUserReleasesAsync(string userId, ReleaseSearchDto searchDto)
+    {
+        var query = _dbContext.Releases.Where(r => r.UserId == userId);
+
+        // Apply search filters
+        if (!string.IsNullOrEmpty(searchDto.ReleaseName))
+            query = query.Where(r => r.ReleaseName.Contains(searchDto.ReleaseName));
+
+        if (!string.IsNullOrEmpty(searchDto.PrimaryArtist))
+            query = query.Where(r => r.PrimaryArtist.Contains(searchDto.PrimaryArtist));
+
+        if (!string.IsNullOrEmpty(searchDto.FeaturingArtist))
+            query = query.Where(r => r.FeaturingArtist != null && r.FeaturingArtist.Contains(searchDto.FeaturingArtist));
+
+        if (!string.IsNullOrEmpty(searchDto.Genre))
+            query = query.Where(r => r.Genre != null && r.Genre.Contains(searchDto.Genre));
+
+        if (!string.IsNullOrEmpty(searchDto.Subgenre))
+            query = query.Where(r => r.Subgenre != null && r.Subgenre.Contains(searchDto.Subgenre));
+
+        if (!string.IsNullOrEmpty(searchDto.TypeOfRelease))
+            query = query.Where(r => r.TypeOfRelease != null && r.TypeOfRelease.Contains(searchDto.TypeOfRelease));
+
+        if (!string.IsNullOrEmpty(searchDto.Contributors))
+            query = query.Where(r => r.Contributors != null && r.Contributors.Contains(searchDto.Contributors));
+
+        if (searchDto.CreatedAfter.HasValue)
+            query = query.Where(r => r.CreatedAt >= searchDto.CreatedAfter.Value);
+
+        if (searchDto.CreatedBefore.HasValue)
+            query = query.Where(r => r.CreatedAt <= searchDto.CreatedBefore.Value);
+
+        var releases = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new ReleaseDto
+            {
+                Id = r.Id,
+                ReleaseName = r.ReleaseName,
+                ReleaseVersion = r.ReleaseVersion,
+                FeaturingArtist = r.FeaturingArtist,
+                PrimaryArtist = r.PrimaryArtist,
+                Roles = r.Roles,
+                Contributors = r.Contributors,
+                Genre = r.Genre,
+                Subgenre = r.Subgenre,
+                TypeOfRelease = r.TypeOfRelease,
+                CoverArtPath = r.CoverArtPath,
+                AudioFilePath = r.AudioFilePath
+            })
+            .ToListAsync();
+
+        // Convert file paths to URLs
+        foreach (var release in releases)
+        {
+            release.CoverArtPath = GetMediaUrl(release.CoverArtPath);
+            release.AudioFilePath = GetMediaUrl(release.AudioFilePath);
+        }
+
+        return releases;
+    }
+
+    private string GetMediaUrl(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+            return filePath;
+
+        // Convert file path to URL path
+        var relativePath = Path.GetRelativePath("uploads", filePath).Replace('\\', '/');
+        return $"{_options.MediaBaseUrl}/{relativePath}";
     }
 }

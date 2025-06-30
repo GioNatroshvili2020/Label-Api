@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+namespace label_api.DTOs;
+
 public class ReleaseUploadForm
 {
     [FromForm] public string ReleaseName { get; set; }

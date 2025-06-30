@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using label_api.Models;
+using label_api.Options;
 
 public static class AdminSeeder
 {

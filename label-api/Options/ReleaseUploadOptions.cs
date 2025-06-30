@@ -1,3 +1,5 @@
+namespace label_api.Options;
+
 public class ReleaseUploadOptions
 {
     public long MaxCoverArtSize { get; set; } = 5 * 1024 * 1024; // 5MB default
@@ -6,4 +8,5 @@ public class ReleaseUploadOptions
     public string[] AllowedAudioExtensions { get; set; } = new[] { ".mp3", ".wav", ".flac" };
     public string CoverArtDir { get; set; } = "uploads/coverart";
     public string AudioDir { get; set; } = "uploads/audio";
+    public string MediaBaseUrl { get; set; } = "http://localhost:8081/media";
 } 
