@@ -102,8 +102,8 @@ public class ReleaseService : IReleaseService
                 Genre = release.Genre,
                 Subgenre = release.Subgenre,
                 TypeOfRelease = release.TypeOfRelease,
-                CoverArtPath = coverArtPath,
-                AudioFilePath = audioPath
+                CoverArtPath = GetMediaUrl(coverArtPath),
+                AudioFilePath = GetMediaUrl(audioPath)
             };
             return (true, null, result);
         }
@@ -139,6 +139,13 @@ public class ReleaseService : IReleaseService
                 AudioFilePath = r.AudioFilePath
             })
             .ToListAsync();
+
+        // Convert file paths to URLs
+        foreach (var release in releases)
+        {
+            release.CoverArtPath = GetMediaUrl(release.CoverArtPath);
+            release.AudioFilePath = GetMediaUrl(release.AudioFilePath);
+        }
 
         return releases;
     }
@@ -194,6 +201,23 @@ public class ReleaseService : IReleaseService
             })
             .ToListAsync();
 
+        // Convert file paths to URLs
+        foreach (var release in releases)
+        {
+            release.CoverArtPath = GetMediaUrl(release.CoverArtPath);
+            release.AudioFilePath = GetMediaUrl(release.AudioFilePath);
+        }
+
         return releases;
+    }
+
+    private string GetMediaUrl(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+            return filePath;
+
+        // Convert file path to URL path
+        var relativePath = Path.GetRelativePath("uploads", filePath).Replace('\\', '/');
+        return $"{_options.MediaBaseUrl}/{relativePath}";
     }
 }

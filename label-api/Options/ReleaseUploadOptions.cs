@@ -8,4 +8,5 @@ public class ReleaseUploadOptions
     public string[] AllowedAudioExtensions { get; set; } = new[] { ".mp3", ".wav", ".flac" };
     public string CoverArtDir { get; set; } = "uploads/coverart";
     public string AudioDir { get; set; } = "uploads/audio";
+    public string MediaBaseUrl { get; set; } = "http://localhost:8081/media";
 } 

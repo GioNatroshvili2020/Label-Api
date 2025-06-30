@@ -41,6 +41,16 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.Configure<AdminUserOptions>(builder.Configuration.GetSection("AdminUser"));
 
+// Configure media base URL from environment
+builder.Services.PostConfigure<ReleaseUploadOptions>(options =>
+{
+    var mediaBaseUrl = builder.Configuration.GetValue<string>("MediaBaseUrl");
+    if (!string.IsNullOrEmpty(mediaBaseUrl))
+    {
+        options.MediaBaseUrl = mediaBaseUrl;
+    }
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
