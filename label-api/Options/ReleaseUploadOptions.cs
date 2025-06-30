@@ -1,3 +1,5 @@
+namespace label_api.Options;
+
 public class ReleaseUploadOptions
 {
     public long MaxCoverArtSize { get; set; } = 5 * 1024 * 1024; // 5MB default

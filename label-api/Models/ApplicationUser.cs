@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
 
+namespace label_api.Models;
+
 public class ApplicationUser : IdentityUser
 {
     public string Username { get; set; }

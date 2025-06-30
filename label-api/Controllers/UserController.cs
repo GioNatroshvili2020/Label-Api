@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using label_api.DTOs;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/users")]
 public class UserController : ControllerBase
 {
     private readonly UserService _userService;

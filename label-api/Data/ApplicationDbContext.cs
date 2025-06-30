@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using label_api.Models;
+
+namespace label_api.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {

@@ -1,19 +1,6 @@
 using Microsoft.AspNetCore.Identity;
-
-public class RegisterUserDto
-{
-    public string Email { get; set; }
-    public string Password { get; set; }
-    public string Username { get; set; }
-    public string ArtistName { get; set; }
-    public List<string> ExistingDspProfileLinks { get; set; }
-}
-
-public class LoginUserDto
-{
-    public string Email { get; set; }
-    public string Password { get; set; }
-}
+using label_api.DTOs;
+using label_api.Models;
 
 public class UserService
 {

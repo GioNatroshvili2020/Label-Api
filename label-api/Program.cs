@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using label_api.Data;
+using label_api.Models;
+using label_api.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 

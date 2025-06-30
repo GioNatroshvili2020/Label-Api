@@ -2,6 +2,7 @@ using MimeDetective;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using label_api.Handlers;
+using label_api.Options;
 
 public static class ServiceCollectionExtensions
 {
