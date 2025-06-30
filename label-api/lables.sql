@@ -1,0 +1,18 @@
+CREATE TABLE "Releases" (
+    "Id" SERIAL PRIMARY KEY,
+    "UserId" VARCHAR(450) NOT NULL,
+    "CoverArtPath" TEXT NOT NULL,
+    "AudioFilePath" TEXT NOT NULL,
+    "ReleaseName" TEXT NOT NULL,
+    "ReleaseVersion" TEXT,
+    "FeaturingArtist" TEXT,
+    "PrimaryArtist" TEXT,
+    "Roles" TEXT,
+    "Contributors" TEXT,
+    "Genre" TEXT,
+    "Subgenre" TEXT,
+    "TypeOfRelease" TEXT,
+    "CreatedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+    "UpdatedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_user FOREIGN KEY("UserId") REFERENCES "AspNetUsers"("Id") ON DELETE CASCADE
+);
