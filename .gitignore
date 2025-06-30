@@ -388,10 +388,6 @@ $RECYCLE.BIN/
 # Mac desktop service store files
 .DS_Store
 
-# Docker
-.dockerignore
-Dockerfile*
-docker-compose*
 
 # Environment variables
 .env
