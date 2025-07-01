@@ -13,7 +13,7 @@ CREATE TABLE "Releases" (
     "Subgenre" TEXT,
     "TypeOfRelease" TEXT,
     "LabelStatus" INTEGER NOT NULL DEFAULT 1,
-    "RejectMessage" TEXT NOT NULL DEFAULT '',
+    "RejectMessage" TEXT NULL,
     "CreatedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
     "UpdatedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_user FOREIGN KEY("UserId") REFERENCES "AspNetUsers"("Id") ON DELETE CASCADE

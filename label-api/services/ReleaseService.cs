@@ -87,7 +87,9 @@ public class ReleaseService : IReleaseService
                 Subgenre = dto.Subgenre,
                 TypeOfRelease = dto.TypeOfRelease,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                LabelStatus= (int)ReleaseStatus.Draft
+
             };
             _dbContext.Add(release);
             await _dbContext.SaveChangesAsync();
@@ -105,7 +107,8 @@ public class ReleaseService : IReleaseService
                 Subgenre = release.Subgenre,
                 TypeOfRelease = release.TypeOfRelease,
                 CoverArtPath = GetMediaUrl(coverArtPath),
-                AudioFilePath = GetMediaUrl(audioPath)
+                AudioFilePath = GetMediaUrl(audioPath),
+                LabelStatus = (ReleaseStatus)release.LabelStatus,
             };
             return (true, null, result);
         }
@@ -138,7 +141,10 @@ public class ReleaseService : IReleaseService
                 Subgenre = r.Subgenre,
                 TypeOfRelease = r.TypeOfRelease,
                 CoverArtPath = r.CoverArtPath,
-                AudioFilePath = r.AudioFilePath
+                AudioFilePath = r.AudioFilePath,
+                LabelStatus=(ReleaseStatus)r.LabelStatus,
+                RejectMessage=r.RejectMessage
+                
             })
             .ToListAsync();
 
@@ -178,11 +184,9 @@ public class ReleaseService : IReleaseService
         if (!string.IsNullOrEmpty(searchDto.Contributors))
             query = query.Where(r => r.Contributors != null && r.Contributors.Contains(searchDto.Contributors));
 
-        if (searchDto.CreatedAfter.HasValue)
-            query = query.Where(r => r.CreatedAt >= searchDto.CreatedAfter.Value);
+        query = query.Where(r => r.CreatedAt >= searchDto.CreatedAfter);
 
-        if (searchDto.CreatedBefore.HasValue)
-            query = query.Where(r => r.CreatedAt <= searchDto.CreatedBefore.Value);
+        query = query.Where(r => r.CreatedAt <= searchDto.CreatedBefore);
 
         var releases = await query
             .OrderByDescending(r => r.CreatedAt)
@@ -289,9 +293,7 @@ public class ReleaseService : IReleaseService
             query = query.Where(r => r.TypeOfRelease != null && r.TypeOfRelease.Contains(searchDto.TypeOfRelease));
         if (!string.IsNullOrEmpty(searchDto.Contributors))
             query = query.Where(r => r.Contributors != null && r.Contributors.Contains(searchDto.Contributors));
-        if (searchDto.CreatedAfter.HasValue)
             query = query.Where(r => r.CreatedAt >= searchDto.CreatedAfter.Value);
-        if (searchDto.CreatedBefore.HasValue)
             query = query.Where(r => r.CreatedAt <= searchDto.CreatedBefore.Value);
 
         var releases = await query
@@ -309,7 +311,9 @@ public class ReleaseService : IReleaseService
                 Subgenre = r.Subgenre,
                 TypeOfRelease = r.TypeOfRelease,
                 CoverArtPath = r.CoverArtPath,
-                AudioFilePath = r.AudioFilePath
+                AudioFilePath = r.AudioFilePath,
+                LabelStatus = (ReleaseStatus)r.LabelStatus,
+                RejectMessage = r.RejectMessage
             })
             .ToListAsync();
 
@@ -347,7 +351,9 @@ public class ReleaseService : IReleaseService
                 Subgenre = r.Subgenre,
                 TypeOfRelease = r.TypeOfRelease,
                 CoverArtPath = r.CoverArtPath,
-                AudioFilePath = r.AudioFilePath
+                AudioFilePath = r.AudioFilePath,
+                LabelStatus = (ReleaseStatus)r.LabelStatus,
+                RejectMessage = r.RejectMessage
             })
             .ToListAsync();
         foreach (var release in releases)
