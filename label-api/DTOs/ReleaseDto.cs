@@ -1,3 +1,5 @@
+using label_api.Models;
+
 namespace label_api.DTOs;
 
 public class ReleaseDto
@@ -9,6 +11,8 @@ public class ReleaseDto
     public string PrimaryArtist { get; set; }
     public string Roles { get; set; }
     public string Contributors { get; set; }
+    public ReleaseStatus LabelStatus { get; set; }
+    public string RejectMessage { get; set; }
     public string Genre { get; set; }
     public string Subgenre { get; set; }
     public string TypeOfRelease { get; set; }
