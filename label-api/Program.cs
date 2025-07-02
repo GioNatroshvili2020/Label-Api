@@ -19,6 +19,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 builder.Services.AddCustomServices(builder.Configuration);
 builder.Services.AddGlobalErrorHandling();
+builder.Services.AddDevelopmentCors(builder.Configuration, builder.Environment);
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -37,6 +38,27 @@ builder.Services.ConfigureApplicationCookie(options =>
         context.Response.StatusCode = 403;
         return Task.CompletedTask;
     };
+    
+    // Create persistent cookie and configure SameSite for development
+    options.Events.OnSigningIn = context =>
+    {
+        context.Properties.IsPersistent = true;
+
+        // Disabling same-site policy in case of local environment
+        if (builder.Environment.IsDevelopment())
+        {
+            context.CookieOptions.SameSite = SameSiteMode.None;
+            context.CookieOptions.Secure = true;
+        }
+        return Task.CompletedTask;
+    };
+    
+    // Additional SameSite configuration for development
+    if (builder.Environment.IsDevelopment())
+    {
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    }
 });
 
 builder.Services.Configure<AdminUserOptions>(builder.Configuration.GetSection("AdminUser"));
@@ -65,6 +87,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
