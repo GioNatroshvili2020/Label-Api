@@ -1,6 +1,7 @@
 using MimeDetective;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Hosting;
 using label_api.Handlers;
 using label_api.Options;
 
@@ -27,6 +28,25 @@ public static class ServiceCollectionExtensions
         // Add problem details support for consistent error responses
         services.AddProblemDetails();
         
+        return services;
+    }
+
+    public static IServiceCollection AddDevelopmentCors(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    {
+        if (environment.IsDevelopment())
+        {
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy
+                        .SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
+        }
         return services;
     }
 }
