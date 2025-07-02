@@ -293,8 +293,8 @@ public class ReleaseService : IReleaseService
             query = query.Where(r => r.TypeOfRelease != null && r.TypeOfRelease.Contains(searchDto.TypeOfRelease));
         if (!string.IsNullOrEmpty(searchDto.Contributors))
             query = query.Where(r => r.Contributors != null && r.Contributors.Contains(searchDto.Contributors));
-            query = query.Where(r => r.CreatedAt >= searchDto.CreatedAfter.Value);
-            query = query.Where(r => r.CreatedAt <= searchDto.CreatedBefore.Value);
+            query = query.Where(r => r.CreatedAt >= searchDto.CreatedAfter);
+            query = query.Where(r => r.CreatedAt <= searchDto.CreatedBefore);
 
         var releases = await query
             .OrderByDescending(r => r.CreatedAt)
